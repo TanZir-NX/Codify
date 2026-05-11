@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Codify</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%236366f1'/><path d='M30 25h40v50H30z' fill='none' stroke='%23fff' stroke-width='8'/><path d='M35 35h30M35 45h20M35 55h25' stroke='%23fff' stroke-width='4' stroke-linecap='round'/></svg>">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-brand">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg>
+      <span>Codify</span>
+    </div>
+    <div class="nav-actions">
+      <button id="themeBtn" class="btn-icon" title="Toggle Theme">🌙</button>
+      <button id="profileBtn" class="btn-icon" title="Profile">👤</button>
+    </div>
+  </nav>
+
+  <main class="main">
+    <!-- User Panel -->
+    <aside id="userPanel" class="panel active">
+      <div class="card">
+        <h2>⚡ Prompt</h2>
+        <div class="input-group">
+          <label for="prompt">Describe your code</label>
+          <textarea id="prompt" placeholder="e.g., Fetch data from API and display in a responsive grid..."></textarea>
+        </div>
+        <div class="input-group">
+          <label for="language">Language / Framework</label>
+          <select id="language">
+            <option value="auto">Auto Detect</option>
+            <option value="html">HTML</option>
+            <option value="css">CSS</option>
+            <option value="javascript">JavaScript</option>
+            <option value="react">React</option>
+            <option value="node">Node.js</option>
+            <option value="python">Python</option>
+            <option value="java">Java</option>
+            <option value="php">PHP</option>
+            <option value="cpp">C++</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label><input type="checkbox" id="explainToggle" checked> Include explanation</label>
+        </div>
+        <button id="generateBtn" class="btn btn-primary">✨ Generate Code</button>
+      </div>
+
+      <div class="card" style="margin-top:1rem">
+        <h2>📜 History</h2>
+        <div id="historyList" style="max-height:200px; overflow-y:auto; padding:0.25rem 0;"></div>
+        <button id="clearHistory" class="btn btn-outline" style="width:100%; margin-top:0.5rem; font-size:0.8rem;">Clear History</button>
+      </div>
+    </aside>
+
+    <!-- Output Area -->
+    <section class="panel active">
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem">
+          <h2 style="margin:0">💻 Output</h2>
+          <span id="statusMsg" style="font-size:0.8rem; color:var(--text-muted)">Ready</span>
+        </div>
+        <div id="codeOutput" class="code-view">// Generated code will appear here...</div>
+        <div class="code-actions">
+          <button id="copyBtn" class="btn btn-outline" disabled>📋 Copy</button>
+          <button id="downloadBtn" class="btn btn-outline" disabled>⬇️ Download</button>
+          <button id="clearBtn" class="btn btn-outline">🗑️ Clear</button>
+          <button id="regenerateBtn" class="btn btn-outline">🔄 Regenerate</button>
+        </div>
+        <div id="explanationOutput" class="explanation"></div>
+      </div>
+    </section>
+
+    <!-- Admin Panel -->
+    <section id="adminPanel" class="panel">
+      <div class="card">
+        <h2>🛡️ Admin Dashboard</h2>
+        <div class="tabs">
+          <div class="tab active" data-view="stats">📊 Analytics</div>
+          <div class="tab" data-view="settings">⚙️ Settings</div>
+          <div class="tab" data-view="logs">📝 Logs</div>
+        </div>
+        <div id="adminContent"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Auth Modal -->
+  <div id="authModal" class="modal">
+    <div class="modal-content">
+      <span class="close-modal">&times;</span>
+      <h2 style="margin-bottom:1rem">Login</h2>
+      <div class="input-group"><input type="text" id="authUser" placeholder="Username (user/admin)"></div>
+      <div class="input-group"><input type="password" id="authPass" placeholder="Password (user123/admin123)"></div>
+      <button id="loginBtn" class="btn btn-primary">Login</button>
+    </div>
+  </div>
+
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
