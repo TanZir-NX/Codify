@@ -3,7 +3,6 @@ const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
-const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,16 +12,19 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
+// ✅ Root route
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
 // Rate Limiting
 const generateLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
   max: 20,
-  standardHeaders: true,
-  legacyHeaders: false,
   message: { error: 'Rate limit exceeded. Please wait a moment.' }
 });
 
-// Mock In-Memory Store (Simulates DB for minimal setup)
+// Mock Store
 let appState = {
   totalRequests: 0,
   users: [{ id: 1, name: 'User', role: 'user' }, { id: 2, name: 'Admin', role: 'admin' }],
@@ -35,9 +37,8 @@ const logActivity = (msg) => {
   if (appState.logs.length > 50) appState.logs.pop();
 };
 
-// Routes
+// API Routes
 app.get('/api/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
-
 app.get('/api/config', (req, res) => res.json(appState.settings));
 
 app.post('/api/login', (req, res) => {
@@ -60,15 +61,10 @@ app.get('/api/admin/stats', (req, res) => {
 app.post('/api/generate', generateLimiter, async (req, res) => {
   try {
     const { prompt, language, includeExplanation } = req.body;
-    if (!prompt || prompt.length > 1000) return res.status(400).json({ error: 'Invalid or missing prompt' });
+    if (!prompt || prompt.length > 1000) return res.status(400).json({ error: 'Invalid prompt' });
 
-    logActivity(`Generated code for language: ${language || 'Auto'}`);
+    logActivity(`Generated code for: ${language || 'Auto'}`);
     appState.totalRequests++;
-
-    const systemPrompt = `You are an expert full-stack engineer. Generate production-quality, well-commented code.
-Respond STRICTLY as a JSON object with these keys: "title", "language", "code", "explanation", "warnings".
-Do not wrap JSON in markdown blocks. Do not add conversational text.
-Code must be clean, secure, and follow best practices.`;
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -81,8 +77,8 @@ Code must be clean, secure, and follow best practices.`;
       body: JSON.stringify({
         model: process.env.DEFAULT_MODEL || 'openrouter/auto',
         messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Generate a ${language || 'script'} that does: ${prompt}. ${includeExplanation ? 'Include a brief explanation.' : ''}` }
+          { role: 'system', content: 'You are an expert coder. Return ONLY valid JSON with keys: title, language, code, explanation, warnings. No markdown, no extra text.' },
+          { role: 'user', content: `Generate ${language || 'code'} for: ${prompt}. ${includeExplanation ? 'Add explanation.' : ''}` }
         ],
         temperature: 0.3,
         max_tokens: 2000
@@ -92,8 +88,6 @@ Code must be clean, secure, and follow best practices.`;
     if (!response.ok) throw new Error(`OpenRouter error: ${response.status}`);
     const data = await response.json();
     let content = data.choices?.[0]?.message?.content || '{}';
-
-    // Clean markdown wrapper if present
     content = content.replace(/^```(?:json)?\n?/i, '').replace(/```$/i, '');
     
     try {
@@ -102,28 +96,24 @@ Code must be clean, secure, and follow best practices.`;
         title: parsed.title || 'Generated Code',
         language: parsed.language || language || 'plaintext',
         code: parsed.code || '',
-        explanation: parsed.explanation || (includeExplanation ? 'No explanation requested.' : ''),
+        explanation: parsed.explanation || '',
         warnings: parsed.warnings || []
       });
     } catch (e) {
-      res.json({
-        title: 'Generated Code',
-        language: language || 'plaintext',
-        code: content,
-        explanation: '',
-        warnings: ['AI response parsing failed. Raw output returned.']
-      });
+      res.json({ title: 'Code', language, code: content, explanation: '', warnings: ['Parse failed'] });
     }
   } catch (err) {
-    console.error('Generate Error:', err);
-    res.status(500).json({ error: 'Failed to generate code. Check server logs or API quota.' });
+    console.error('Error:', err);
+    res.status(500).json({ error: 'Generation failed' });
   }
 });
 
-// Centralized Error Handler
-app.use((err, req, res, next) => {
-  console.error('Server Error:', err);
-  res.status(500).json({ error: 'Internal Server Error' });
+// ✅ Catch-all route
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.listen(PORT, () => console.log(`🚀 Codify running on http://localhost:${PORT}`));
+// Start server
+app.listen(PORT, () => {
+  console.log(`🚀 Codify running on port ${PORT}`);
+});
